@@ -1,0 +1,91 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath System.getenv()['ANDROID_GRADLE_VERSION']
+    }
+}
+
+apply plugin: 'android'
+
+android {
+    compileSdkVersion 16
+    compileSdkVersion 19
+    buildToolsVersion System.getenv()["BUILD_TOOL_VERSION"]
+
+    defaultConfig {
+        minSdkVersion 8
+        targetSdkVersion 19
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        releaseConfig {
+            storeFile file("talkingsdk.keystore")
+            storePassword 'talkingsdk'
+            keyAlias 'talkingsdk'
+            keyPassword 'talkingsdk'
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.releaseConfig
+            zipAlignEnabled true
+        }
+        debug {
+            zipAlignEnabled true
+            jniDebuggable true
+        }
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDir 'src'
+            res.srcDir 'res'
+            assets.srcDir 'assets'
+            resources.srcDir 'src'
+            jniLibs.srcDirs 'libs'
+            jni.srcDirs = []
+        }
+        test {
+            java.srcDir 'tests/src'
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn ndkBuild
+    }
+}
+import org.apache.tools.ant.taskdefs.condition.Os
+import java.nio.file.Paths
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://repos.code4.in/release/talkingsdk-maven/raw/master/"
+    }
+}
+
+dependencies {
+    if ( System.getenv()["TSENV"] != "production" ) {
+        println(" in development" )
+        compile project (":projects:talkingsdk-lenovo")
+    } else {
+        println(" in production" )
+        compile("com.talkingsdk:talkingsdk-lenovo:2.3.2.1")
+        compile("com.talkingsdk:talkingsdk:0.5")
+        compile("org.cocos2d-x:cocos2dx:2.1.5")
+    }
+    compile fileTree(dir: 'libs', include: '*.jar')
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.12'
+}
